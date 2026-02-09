@@ -1,8 +1,10 @@
 package com.lucasquared.ccr.controller;
 
 import com.lucasquared.ccr.domain.user.AuthenticationDTO;
+import com.lucasquared.ccr.domain.user.LoginResponseDTO;
 import com.lucasquared.ccr.domain.user.RegisterDTO;
 import com.lucasquared.ccr.domain.user.User;
+import com.lucasquared.ccr.infra.security.TokenService;
 import com.lucasquared.ccr.repository.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +24,10 @@ public class AuthenticationController {
 
     private final UserRepository userRepository;
 
-    public AuthenticationController(AuthenticationManager authenticationManager, UserRepository userRepository) {
+    private final TokenService tokenService;
+
+    public AuthenticationController(AuthenticationManager authenticationManager, UserRepository userRepository, TokenService tokenService) {
+         this.tokenService = tokenService;
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
     }
@@ -32,7 +37,9 @@ public class AuthenticationController {
         var userNamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
         var auth = this.authenticationManager.authenticate(userNamePassword);
 
-        return ResponseEntity.ok().build();
+        var token = tokenService.generateToken((User) auth.getPrincipal());
+
+        return ResponseEntity.ok(new LoginResponseDTO(token));
     }
 
     @PostMapping("/register")
