@@ -1,6 +1,8 @@
 package com.lucasquared.ccr.domain.user;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,6 +34,7 @@ public class User implements UserDetails {
 
     private String name;
 
+    @Enumerated(EnumType.STRING)
     private UserRole role;
 
     public User(String name, String login, String password, UserRole role) {
