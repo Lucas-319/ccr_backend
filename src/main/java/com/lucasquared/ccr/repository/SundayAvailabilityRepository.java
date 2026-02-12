@@ -19,4 +19,6 @@ public interface SundayAvailabilityRepository extends JpaRepository<SundayAvaila
     Optional<SundayAvailability> findByDateAndShiftAndUserId(LocalDate date, SundayShift shift, String userId);
 
     List<SundayAvailability> findByDateBetween(LocalDate start, LocalDate end);
+
+    List<SundayAvailability> findByDateBetweenAndShift(LocalDate start, LocalDate end, SundayShift shift);
 }

@@ -2,6 +2,7 @@ package com.lucasquared.ccr.controller;
 
 import com.lucasquared.ccr.domain.sunday.SundayAvailabilityResponseDTO;
 import com.lucasquared.ccr.domain.sunday.SundayCreateDTO;
+import com.lucasquared.ccr.domain.sunday.SundayReportDTO;
 import com.lucasquared.ccr.domain.sunday.SundayShift;
 import com.lucasquared.ccr.domain.sunday.SundaySummaryDTO;
 import com.lucasquared.ccr.domain.user.User;
@@ -42,6 +43,14 @@ public class SundayController {
             @RequestParam String start,
             @RequestParam String end) {
         return ResponseEntity.ok(sundayService.listSummary(start, end));
+    }
+
+    @GetMapping("/report")
+    public ResponseEntity<List<SundayReportDTO>> listReport(
+            @RequestParam String start,
+            @RequestParam(required = false) String end,
+            @RequestParam SundayShift shift) {
+        return ResponseEntity.ok(sundayService.listReport(start, end, shift));
     }
 
     @DeleteMapping

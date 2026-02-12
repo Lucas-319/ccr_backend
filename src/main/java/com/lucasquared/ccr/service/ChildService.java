@@ -61,6 +61,12 @@ public class ChildService {
                 .toList();
     }
 
+    public List<ChildResponseDTO> searchByName(String name) {
+        return childRepository.findByNameContainingIgnoreCase(name).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public void deleteChild(String id) {
         Child child = childRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Child not found"));

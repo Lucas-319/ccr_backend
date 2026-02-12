@@ -1,13 +1,18 @@
 package com.lucasquared.ccr.service;
 
+import com.lucasquared.ccr.domain.attendance.ChildAttendance;
+import com.lucasquared.ccr.domain.attendance.ChildAttendanceResponseDTO;
+import com.lucasquared.ccr.domain.child.ChildSummaryDTO;
 import com.lucasquared.ccr.domain.sunday.SundayAvailability;
 import com.lucasquared.ccr.domain.sunday.SundayAvailabilityResponseDTO;
 import com.lucasquared.ccr.domain.sunday.SundayCreateDTO;
+import com.lucasquared.ccr.domain.sunday.SundayReportDTO;
 import com.lucasquared.ccr.domain.sunday.SundayShift;
 import com.lucasquared.ccr.domain.sunday.SundaySummaryDTO;
 import com.lucasquared.ccr.domain.user.User;
 import com.lucasquared.ccr.domain.user.UserSummaryDTO;
 import com.lucasquared.ccr.domain.user.UserRole;
+import com.lucasquared.ccr.repository.ChildAttendanceRepository;
 import com.lucasquared.ccr.repository.SundayAvailabilityRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,9 +35,11 @@ public class SundayService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final SundayAvailabilityRepository repository;
+    private final ChildAttendanceRepository attendanceRepository;
 
-    public SundayService(SundayAvailabilityRepository repository) {
+    public SundayService(SundayAvailabilityRepository repository, ChildAttendanceRepository attendanceRepository) {
         this.repository = repository;
+        this.attendanceRepository = attendanceRepository;
     }
 
     public SundayAvailabilityResponseDTO createAvailability(User user, SundayCreateDTO dto) {
@@ -128,6 +135,57 @@ public class SundayService {
         repository.delete(availability);
     }
 
+    public List<SundayReportDTO> listReport(String start, String end, SundayShift shift) {
+        LocalDate startDate = parseDate(start);
+        LocalDate endDate = resolveEndDate(startDate, end);
+
+        if (endDate.isBefore(startDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be after start date");
+        }
+
+        List<SundayAvailability> availabilities = repository.findByDateBetweenAndShift(startDate, endDate, shift);
+        Map<LocalDate, List<SundayAvailability>> availabilityByDate = new HashMap<>();
+        for (SundayAvailability availability : availabilities) {
+            availabilityByDate.computeIfAbsent(availability.getDate(), ignore -> new ArrayList<>()).add(availability);
+        }
+
+        List<ChildAttendance> attendances = attendanceRepository.findByDateBetweenAndShift(startDate, endDate, shift);
+        Map<LocalDate, List<ChildAttendance>> attendanceByDate = new HashMap<>();
+        for (ChildAttendance attendance : attendances) {
+            attendanceByDate.computeIfAbsent(attendance.getDate(), ignore -> new ArrayList<>()).add(attendance);
+        }
+
+        List<SundayReportDTO> result = new ArrayList<>();
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            if (date.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                continue;
+            }
+
+            List<SundayAvailability> availabilityList = availabilityByDate.getOrDefault(date, List.of());
+            List<UserSummaryDTO> users = availabilityList.stream()
+                    .map(a -> new UserSummaryDTO(a.getUser().getId(), a.getUser().getName()))
+                    .toList();
+
+            int remaining = Math.max(0, MAX_PER_SHIFT - users.size());
+
+            List<ChildAttendanceResponseDTO> attendanceResponses = attendanceByDate
+                    .getOrDefault(date, List.of()).stream()
+                    .map(this::toAttendanceResponse)
+                    .toList();
+
+            result.add(new SundayReportDTO(
+                    date.format(DATE_FORMAT),
+                    shift,
+                    users,
+                    remaining,
+                    attendanceResponses));
+        }
+
+        result.sort(Comparator.comparing(report -> LocalDate.parse(report.date(), DATE_FORMAT)));
+        return result;
+    }
+
     private String buildKey(LocalDate date, SundayShift shift) {
         return date + "|" + shift.name();
     }
@@ -140,6 +198,10 @@ public class SundayService {
         }
     }
 
+    private LocalDate resolveEndDate(LocalDate startDate, String end) {
+        return end == null || end.isBlank() ? startDate : parseDate(end);
+    }
+
     private String resolveTargetUserId(User user, String userId, boolean isAdmin) {
         if (isAdmin) {
             return userId != null ? userId : user.getId();
@@ -150,5 +212,19 @@ public class SundayService {
         }
 
         return user.getId();
+    }
+
+    private ChildAttendanceResponseDTO toAttendanceResponse(ChildAttendance attendance) {
+        return new ChildAttendanceResponseDTO(
+                attendance.getDate().format(DATE_FORMAT),
+                attendance.getShift(),
+                attendance.getPresent(),
+                new ChildSummaryDTO(attendance.getChild().getId(), attendance.getChild().getName()),
+                new UserSummaryDTO(attendance.getMarkedBy().getId(), attendance.getMarkedBy().getName()),
+                attendance.getUpdatedBy() == null
+                        ? null
+                        : new UserSummaryDTO(attendance.getUpdatedBy().getId(), attendance.getUpdatedBy().getName()),
+                attendance.getCreatedAt(),
+                attendance.getUpdatedAt());
     }
 }
