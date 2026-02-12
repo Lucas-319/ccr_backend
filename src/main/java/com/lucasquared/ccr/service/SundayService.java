@@ -9,6 +9,8 @@ import com.lucasquared.ccr.domain.sunday.SundayCreateDTO;
 import com.lucasquared.ccr.domain.sunday.SundayReportDTO;
 import com.lucasquared.ccr.domain.sunday.SundayShift;
 import com.lucasquared.ccr.domain.sunday.SundaySummaryDTO;
+import com.lucasquared.ccr.domain.sunday.SundayCalendarMonthDTO;
+import com.lucasquared.ccr.domain.sunday.SundayCalendarDayDTO;
 import com.lucasquared.ccr.domain.user.User;
 import com.lucasquared.ccr.domain.user.UserSummaryDTO;
 import com.lucasquared.ccr.domain.user.UserRole;
@@ -16,10 +18,12 @@ import com.lucasquared.ccr.repository.ChildAttendanceRepository;
 import com.lucasquared.ccr.repository.SundayAvailabilityRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional
 public class SundayService {
 
     private static final int MAX_PER_SHIFT = 2;
@@ -226,5 +231,62 @@ public class SundayService {
                         : new UserSummaryDTO(attendance.getUpdatedBy().getId(), attendance.getUpdatedBy().getName()),
                 attendance.getCreatedAt(),
                 attendance.getUpdatedAt());
+    }
+
+    public SundayCalendarMonthDTO getMonthCalendar(String month) {
+        YearMonth yearMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern("MM/yyyy"));
+        LocalDate start = yearMonth.atDay(1);
+        LocalDate end = yearMonth.atEndOfMonth();
+
+        List<SundayAvailability> availabilities = repository.findByDateBetween(start, end);
+        Map<LocalDate, List<SundayAvailability>> availabilityByDate = new HashMap<>();
+        for (SundayAvailability availability : availabilities) {
+            availabilityByDate.computeIfAbsent(availability.getDate(), ignore -> new ArrayList<>()).add(availability);
+        }
+
+        List<ChildAttendance> attendances = attendanceRepository.findByDateBetween(start, end);
+        Map<LocalDate, List<ChildAttendance>> attendanceByDate = new HashMap<>();
+        for (ChildAttendance attendance : attendances) {
+            attendanceByDate.computeIfAbsent(attendance.getDate(), ignore -> new ArrayList<>()).add(attendance);
+        }
+
+        List<SundayCalendarDayDTO> days = new ArrayList<>();
+
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            if (date.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                continue;
+            }
+
+            List<SundayReportDTO> reports = new ArrayList<>();
+
+            for (SundayShift shift : SundayShift.values()) {
+                List<SundayAvailability> availabilityList = availabilityByDate.getOrDefault(date, List.of()).stream()
+                        .filter(a -> a.getShift() == shift)
+                        .toList();
+
+                List<UserSummaryDTO> users = availabilityList.stream()
+                        .map(a -> new UserSummaryDTO(a.getUser().getId(), a.getUser().getName()))
+                        .toList();
+
+                int remaining = Math.max(0, MAX_PER_SHIFT - users.size());
+
+                List<ChildAttendanceResponseDTO> attendanceResponses = attendanceByDate
+                        .getOrDefault(date, List.of()).stream()
+                        .filter(a -> a.getShift() == shift)
+                        .map(this::toAttendanceResponse)
+                        .toList();
+
+                reports.add(new SundayReportDTO(
+                        date.format(DATE_FORMAT),
+                        shift,
+                        users,
+                        remaining,
+                        attendanceResponses));
+            }
+
+            days.add(new SundayCalendarDayDTO(date.format(DATE_FORMAT), reports));
+        }
+
+        return new SundayCalendarMonthDTO(yearMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")), days);
     }
 }

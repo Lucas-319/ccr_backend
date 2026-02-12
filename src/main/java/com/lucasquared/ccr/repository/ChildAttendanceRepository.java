@@ -18,6 +18,8 @@ public interface ChildAttendanceRepository extends JpaRepository<ChildAttendance
 
     List<ChildAttendance> findByDateAndShift(LocalDate date, SundayShift shift);
 
+    List<ChildAttendance> findByDateBetween(LocalDate start, LocalDate end);
+
     List<ChildAttendance> findByDateBetweenAndShift(LocalDate start, LocalDate end, SundayShift shift);
 
     List<ChildAttendance> findByChildIdAndDateBetween(String childId, LocalDate start, LocalDate end);

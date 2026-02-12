@@ -9,11 +9,13 @@ import com.lucasquared.ccr.domain.user.UserSummaryDTO;
 import com.lucasquared.ccr.repository.ChildRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class ChildService {
 
     private final ChildRepository childRepository;

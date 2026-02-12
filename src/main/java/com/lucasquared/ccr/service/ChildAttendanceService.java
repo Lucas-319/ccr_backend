@@ -13,6 +13,7 @@ import com.lucasquared.ccr.repository.ChildAttendanceRepository;
 import com.lucasquared.ccr.repository.ChildRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
@@ -22,6 +23,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
+@Transactional
 public class ChildAttendanceService {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");

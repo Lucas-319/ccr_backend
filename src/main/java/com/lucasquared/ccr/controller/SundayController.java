@@ -5,6 +5,7 @@ import com.lucasquared.ccr.domain.sunday.SundayCreateDTO;
 import com.lucasquared.ccr.domain.sunday.SundayReportDTO;
 import com.lucasquared.ccr.domain.sunday.SundayShift;
 import com.lucasquared.ccr.domain.sunday.SundaySummaryDTO;
+import com.lucasquared.ccr.domain.sunday.SundayCalendarMonthDTO;
 import com.lucasquared.ccr.domain.user.User;
 import com.lucasquared.ccr.service.SundayService;
 import jakarta.validation.Valid;
@@ -61,5 +62,11 @@ public class SundayController {
             @RequestParam(required = false) String userId) {
         sundayService.deleteAvailability(user, date, shift, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/calendar")
+    public ResponseEntity<SundayCalendarMonthDTO> getMonthCalendar(
+            @RequestParam String month) {
+        return ResponseEntity.ok(sundayService.getMonthCalendar(month));
     }
 }
