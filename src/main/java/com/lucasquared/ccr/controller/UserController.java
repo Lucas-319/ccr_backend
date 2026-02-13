@@ -3,6 +3,7 @@ package com.lucasquared.ccr.controller;
 import com.lucasquared.ccr.domain.user.UserCreateDTO;
 import com.lucasquared.ccr.domain.user.UserPasswordUpdateDTO;
 import com.lucasquared.ccr.domain.user.UserResponseDTO;
+import com.lucasquared.ccr.domain.user.UserStatusUpdateDTO;
 import com.lucasquared.ccr.domain.user.UserUpdateDTO;
 import com.lucasquared.ccr.service.UserService;
 import jakarta.validation.Valid;
@@ -56,6 +57,13 @@ public class UserController {
             @RequestBody @Valid UserPasswordUpdateDTO dto) {
         userService.updatePassword(user.getId(), dto);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<UserResponseDTO> updateUserStatus(
+            @PathVariable String id,
+            @RequestBody @Valid UserStatusUpdateDTO dto) {
+        return ResponseEntity.ok(userService.updateStatus(id, dto));
     }
 
     @GetMapping("/{id}")

@@ -4,6 +4,7 @@ import com.lucasquared.ccr.domain.user.User;
 import com.lucasquared.ccr.domain.user.UserCreateDTO;
 import com.lucasquared.ccr.domain.user.UserPasswordUpdateDTO;
 import com.lucasquared.ccr.domain.user.UserResponseDTO;
+import com.lucasquared.ccr.domain.user.UserStatusUpdateDTO;
 import com.lucasquared.ccr.domain.user.UserUpdateDTO;
 import com.lucasquared.ccr.repository.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ public class UserService {
 
         String encryptedPassword = passwordEncoder.encode(dto.password());
         User user = new User(dto.name(), dto.login(), encryptedPassword, dto.role());
+        user.setActive(true);
         User saved = userRepository.save(user);
 
         return toResponse(saved);
@@ -86,7 +88,16 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public UserResponseDTO updateStatus(String id, UserStatusUpdateDTO dto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setActive(dto.active());
+        User saved = userRepository.save(user);
+        return toResponse(saved);
+    }
+
     private UserResponseDTO toResponse(User user) {
-        return new UserResponseDTO(user.getId(), user.getName(), user.getLogin(), user.getRole());
+        return new UserResponseDTO(user.getId(), user.getName(), user.getLogin(), user.getRole(), user.getActive());
     }
 }

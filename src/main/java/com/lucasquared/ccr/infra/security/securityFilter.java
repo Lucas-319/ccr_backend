@@ -41,6 +41,12 @@ public class securityFilter extends OncePerRequestFilter {
             var login = tokenService.validateToken(token);
             UserDetails user = userRepository.findByLogin(login);
 
+            if (user instanceof com.lucasquared.ccr.domain.user.User domainUser
+                    && Boolean.FALSE.equals(domainUser.getActive())) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+
             var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

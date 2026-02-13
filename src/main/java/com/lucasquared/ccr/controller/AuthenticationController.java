@@ -2,11 +2,14 @@ package com.lucasquared.ccr.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import com.lucasquared.ccr.domain.user.AuthenticationDTO;
 import com.lucasquared.ccr.domain.user.LoginResponseDTO;
@@ -30,12 +33,22 @@ public class AuthenticationController {
 
     @PostMapping("login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid AuthenticationDTO data) {
-        var userNamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
-        var auth = this.authenticationManager.authenticate(userNamePassword);
+        try {
+            var userNamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
+            var auth = this.authenticationManager.authenticate(userNamePassword);
 
-        var token = tokenService.generateToken((User) auth.getPrincipal());
+            User user = (User) auth.getPrincipal();
+            if (Boolean.FALSE.equals(user.getActive())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "User is inactive. Please contact an administrator.");
+            }
 
-        return ResponseEntity.ok(new LoginResponseDTO(token));
+            var token = tokenService.generateToken(user);
+            return ResponseEntity.ok(new LoginResponseDTO(token));
+        } catch (DisabledException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "User is inactive. Please contact an administrator.");
+        }
     }
 
 }
