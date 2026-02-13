@@ -48,7 +48,7 @@ public class SecurityConfigurations {
                                                 .requestMatchers("/users/me", "/users/me/password", "/users/health")
                                                 .authenticated()
                                                 .requestMatchers("/users/**").hasRole("ADMIN")
-                                                .requestMatchers(HttpMethod.PUT, "/children/**").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.PUT, "/children/**").authenticated()
                                                 .requestMatchers(HttpMethod.DELETE, "/children/**").hasRole("ADMIN")
                                                 .anyRequest().authenticated())
                                 .exceptionHandling(exception -> exception
