@@ -57,7 +57,7 @@ public class ChildAttendanceService {
         attendance.setChild(child);
         attendance.setMarkedBy(user);
 
-        ChildAttendance saved = attendanceRepository.save(attendance);
+        ChildAttendance saved = attendanceRepository.saveAndFlush(attendance);
 
         return toResponse(saved);
     }
@@ -121,7 +121,7 @@ public class ChildAttendanceService {
         attendance.setPresent(dto.present());
         attendance.setUpdatedBy(user);
 
-        ChildAttendance saved = attendanceRepository.save(attendance);
+        ChildAttendance saved = attendanceRepository.saveAndFlush(attendance);
         return toResponse(saved);
     }
 

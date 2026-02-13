@@ -33,7 +33,7 @@ public class ChildService {
         child.setCreatedBy(user);
         child.setUpdatedBy(user);
 
-        Child saved = childRepository.save(child);
+        Child saved = childRepository.saveAndFlush(child);
         return toResponse(saved);
     }
 
@@ -47,7 +47,7 @@ public class ChildService {
         child.setAllergies(dto.allergies());
         child.setUpdatedBy(user);
 
-        Child saved = childRepository.save(child);
+        Child saved = childRepository.saveAndFlush(child);
         return toResponse(saved);
     }
 
