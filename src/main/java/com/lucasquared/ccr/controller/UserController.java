@@ -1,12 +1,14 @@
 package com.lucasquared.ccr.controller;
 
 import com.lucasquared.ccr.domain.user.UserCreateDTO;
+import com.lucasquared.ccr.domain.user.UserPasswordUpdateDTO;
 import com.lucasquared.ccr.domain.user.UserResponseDTO;
 import com.lucasquared.ccr.domain.user.UserUpdateDTO;
 import com.lucasquared.ccr.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +38,24 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> listUsers() {
         return ResponseEntity.ok(userService.listUsers());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> me(@AuthenticationPrincipal com.lucasquared.ccr.domain.user.User user) {
+        return ResponseEntity.ok(userService.getUser(user.getId()));
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Void> health(@AuthenticationPrincipal com.lucasquared.ccr.domain.user.User user) {
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> updateMyPassword(
+            @AuthenticationPrincipal com.lucasquared.ccr.domain.user.User user,
+            @RequestBody @Valid UserPasswordUpdateDTO dto) {
+        userService.updatePassword(user.getId(), dto);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")

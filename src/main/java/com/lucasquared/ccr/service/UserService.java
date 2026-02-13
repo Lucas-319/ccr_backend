@@ -2,6 +2,7 @@ package com.lucasquared.ccr.service;
 
 import com.lucasquared.ccr.domain.user.User;
 import com.lucasquared.ccr.domain.user.UserCreateDTO;
+import com.lucasquared.ccr.domain.user.UserPasswordUpdateDTO;
 import com.lucasquared.ccr.domain.user.UserResponseDTO;
 import com.lucasquared.ccr.domain.user.UserUpdateDTO;
 import com.lucasquared.ccr.repository.UserRepository;
@@ -71,6 +72,18 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         userRepository.delete(user);
+    }
+
+    public void updatePassword(String userId, UserPasswordUpdateDTO dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is invalid");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        userRepository.save(user);
     }
 
     private UserResponseDTO toResponse(User user) {
